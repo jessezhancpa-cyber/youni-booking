@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Youni 團課預約</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700&family=Sora:wght@300;400;600&display=swap">
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+:root{
+  --bg:#F3F4F2; --paper:#FFFFFF; --ink:#141817; --muted:#69736F; --hair:#D8DDDA;
+  --accent:#23433D; --accent-ink:#F3F4F2; --tint:#E4EBE8;
+  --maple:#B48853; --closed:#A8B1AD; --warn:#9E5A1C;
+  --serif:"Noto Serif TC","Songti TC",serif;
+  --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --num:"Sora","Noto Sans TC",system-ui,sans-serif;
+  --r:18px; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0E1211; --paper:#161B1A; --ink:#E7ECE9; --muted:#8D9995; --hair:#27302D;
+  --accent:#9ACABF; --accent-ink:#0E1211; --tint:#1C2725;
+  --maple:#D3AA74; --closed:#4A5451; --warn:#E3A363; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;padding-top:env(safe-area-inset-top,0px)}
+[hidden]{display:none!important}
+.wrap{max-width:480px;margin:0 auto;padding:0 16px;padding-block:12px 64px}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;padding:0}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button[disabled]{cursor:default}
+
+.loadbar{position:fixed;top:0;left:0;right:0;height:3px;z-index:30;overflow:hidden}
+.loadbar::after{content:"";position:absolute;inset:0;width:40%;background:var(--accent);animation:lb 1s ease-in-out infinite}
+@keyframes lb{from{transform:translateX(-100%)}to{transform:translateX(260%)}}
+.splash{min-height:70vh;display:grid;place-items:center;text-align:center;color:var(--muted)}
+.splash h1{font-family:var(--serif);color:var(--ink);font-size:32px;letter-spacing:.08em;margin:0 0 6px}
+
+.modebar{display:flex;justify-content:flex-end}
+.seg{display:flex;background:var(--tint);border-radius:9px;padding:3px}
+.seg button{padding:5px 12px;border-radius:7px;font-size:12.5px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--paper);color:var(--ink);font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:20px 0 22px}
+.eyebrow{font-family:var(--num);font-size:10.5px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
+.top h1{font-family:var(--serif);font-weight:700;font-size:32px;line-height:1.15;margin:4px 0 0;letter-spacing:.08em}
+.mine-btn{display:flex;align-items:center;gap:8px;border:1px solid var(--hair);background:var(--paper);border-radius:999px;padding:7px 8px 7px 14px;font-size:13.5px;white-space:nowrap}
+.mine-btn b{font-family:var(--num);font-weight:600;min-width:22px;height:22px;border-radius:11px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:12px}
+
+.ticket{position:relative;display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--accent);color:var(--accent-ink);border-radius:16px;padding:14px 22px;margin:-6px 0 28px}
+.ticket::before,.ticket::after{content:"";position:absolute;top:50%;width:16px;height:16px;border-radius:50%;background:var(--bg);transform:translateY(-50%)}
+.ticket::before{left:-8px}.ticket::after{right:-8px}
+.tk-l{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 14px}
+.tk-lbl{font-size:12px;letter-spacing:.14em;opacity:.8}
+.tk-n{font-size:13px}.tk-n b{font-family:var(--num);font-weight:300;font-size:32px;line-height:1;font-variant-numeric:tabular-nums}
+.tk-p{font-size:11.5px;border:1px solid currentColor;border-radius:999px;padding:0 8px;opacity:.85;white-space:nowrap}
+.tk-buy{border-left:1.5px dashed currentColor;padding:6px 0 6px 18px;font-size:14px;font-weight:500;color:var(--accent-ink);letter-spacing:.04em;white-space:nowrap}
+
+.month{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px}
+.mname{display:flex;align-items:baseline;gap:6px}
+.mname .n{font-family:var(--num);font-weight:300;font-size:56px;line-height:.9;letter-spacing:-.03em}
+.mname .u{font-family:var(--serif);font-size:20px;font-weight:500}
+.mname .y{font-family:var(--num);font-size:13px;color:var(--muted);margin-left:6px;letter-spacing:.08em}
+.arrows{display:flex;gap:6px}
+.arrows button{width:38px;height:38px;border-radius:50%;border:1px solid var(--hair);background:var(--paper);display:grid;place-items:center}
+.arrows button[disabled]{opacity:.35}
+.arrows svg{width:16px;height:16px;stroke:var(--ink);fill:none;stroke-width:1.6}
+
+.mopen{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--paper);border:1px solid var(--hair);border-radius:14px;padding:12px 16px;margin-bottom:12px}
+.mopen strong{font-weight:500}
+.mopen small{display:block;color:var(--muted);font-size:12px;line-height:1.5}
+
+.cal{background:var(--paper);border-radius:var(--r);padding:14px 10px 10px;border:1px solid var(--hair)}
+.cal.mclosed{opacity:.55}
+.wd,.grid{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}
+.wd span{font-size:11.5px;color:var(--muted);padding-bottom:8px}
+.wd span.on{color:var(--ink);font-weight:500}
+.grid>*{height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border-radius:12px;font-family:var(--num);font-size:14.5px;font-variant-numeric:tabular-nums}
+.grid .off{color:var(--closed);font-weight:300}
+.grid button.cd{font-weight:600}
+.grid button.cd:hover{background:var(--tint)}
+.grid button.cd.past{color:var(--closed);font-weight:400}
+.grid button.cd.shut .num{text-decoration:line-through;color:var(--closed)}
+.grid button.cd[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.grid button.cd[aria-pressed="true"] .num{color:var(--accent-ink)}
+.grid .today .num{box-shadow:inset 0 -1.5px 0 currentColor}
+.dots{display:flex;gap:4px;height:6px}
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.dot.open{background:var(--accent)}
+.dot.full{box-shadow:inset 0 0 0 1.3px var(--muted)}
+.dot.me{background:var(--maple)}
+.dot.x{width:8px;height:1.5px;border-radius:1px;background:var(--closed);margin-top:2px}
+.dot.past{background:var(--closed);opacity:.5}
+[aria-pressed="true"] .dot.open{background:var(--accent-ink)}
+[aria-pressed="true"] .dot.full{box-shadow:inset 0 0 0 1.3px var(--accent-ink)}
+.key{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:11.5px;color:var(--muted);padding:10px 6px 2px;border-top:1px solid var(--hair);margin-top:8px}
+.key span{display:inline-flex;align-items:center;gap:6px}
+@media (prefers-reduced-motion:no-preference){.grid.anim{animation:fade .35s ease}@keyframes fade{from{opacity:0;transform:translateY(6px)}}}
+.summary{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px;color:var(--muted);margin:14px 2px 0}
+.summary b{font-family:var(--num);font-weight:600;color:var(--ink);margin-right:2px}
+
+.day-h{display:flex;justify-content:space-between;align-items:baseline;margin:30px 0 12px}
+.day-h h2{font-family:var(--serif);font-size:19px;font-weight:700;margin:0;letter-spacing:.03em}
+.day-h small{font-size:12.5px;color:var(--muted)}
+.sessions{display:grid;gap:12px}
+.sess{background:var(--paper);border:1px solid var(--hair);border-radius:var(--r);padding:18px;display:grid;gap:16px}
+.sess.dim{opacity:.6}
+.sess-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.t{font-family:var(--num);font-weight:300;font-size:34px;line-height:1;letter-spacing:-.02em}
+.t small{display:block;font-size:12.5px;font-weight:400;color:var(--muted);letter-spacing:.02em;margin-top:6px}
+.status{font-size:12.5px;text-align:right;color:var(--muted);white-space:nowrap}
+.status b{display:block;font-family:var(--num);font-weight:600;font-size:15px;color:var(--ink)}
+.status.low b{color:var(--warn)}
+.spots{display:grid;gap:8px}
+.spots-h{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.spots-h b{font-family:var(--num);font-weight:600;color:var(--ink)}
+.segs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.seg-i{height:8px;border-radius:4px;background:var(--hair)}
+.seg-i.taken{background:var(--accent)} .seg-i.me{background:var(--maple)}
+.cta{display:block;width:100%;padding:13px;border-radius:12px;font-size:15px;font-weight:500;letter-spacing:.04em;text-align:center}
+.cta.go{background:var(--accent);color:var(--accent-ink)}
+.cta.line{border:1px solid var(--hair)}
+.cta.mine{border:1px solid var(--maple);color:var(--maple)}
+.cta[disabled]{color:var(--closed);border:1px solid var(--hair);background:none}
+.rest{background:var(--paper);border:1px solid var(--hair);border-radius:var(--r);padding:26px 18px;text-align:center;color:var(--muted)}
+.rest b{display:block;font-family:var(--serif);color:var(--ink);font-size:17px;margin-bottom:4px}
+.foot{margin-top:28px;padding-top:16px;border-top:1px solid var(--hair);font-size:12.5px;color:var(--muted);display:grid;gap:4px}
+
+.adm{background:var(--paper);border:1px solid var(--hair);border-radius:var(--r);padding:4px 18px}
+.adm-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--hair)}
+.adm-row:last-child{border-bottom:0}
+.adm-row .lbl{min-width:0}
+.adm-row .lbl b{font-family:var(--num);font-weight:400;font-size:20px}
+.adm-row .lbl strong{font-weight:500}
+.roster{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.chip{font-size:12px;background:var(--tint);border-radius:999px;padding:1px 9px}
+.chip.w{background:none;border:1px dashed var(--hair)}
+.chip.empty{background:none;color:var(--muted);padding:0}
+.note-warn{font-size:12px;color:var(--warn);margin-top:6px}
+.sw{position:relative;width:46px;height:28px;border-radius:14px;background:var(--hair);flex-shrink:0;transition:background .2s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .2s}
+.sw[aria-checked="true"]{background:var(--accent)}
+.sw[aria-checked="true"]::after{transform:translateX(18px)}
+.sw[disabled]{opacity:.4}
+.field{display:grid;gap:6px;padding:0 0 14px}
+.field label{font-size:12.5px;color:var(--muted)}
+.field .inrow{display:flex;gap:8px}
+.field input{width:100%;min-width:0;font:inherit;border:1px solid var(--hair);background:var(--bg);border-radius:10px;padding:9px 12px;color:var(--ink)}
+.small-btn{font-size:13px;border:1px solid var(--hair);border-radius:10px;padding:0 14px;white-space:nowrap}
+.block{margin-top:22px;font-size:13px}
+.block h3{font-size:12px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin:0 0 6px}
+.block ul{margin:0;padding:0;list-style:none;display:grid}
+.block li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--hair)}
+.block li>span:last-child{color:var(--muted);text-align:right}
+.block small{display:block;color:var(--muted);font-size:12px}
+.acts{display:flex;gap:6px;flex-shrink:0}
+.ok-btn{font-size:12.5px;font-weight:500;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:6px 12px;white-space:nowrap}
+.no-btn{font-size:12.5px;border:1px solid var(--hair);border-radius:999px;padding:6px 10px;white-space:nowrap}
+.adj{display:inline-flex;align-items:center;gap:8px;color:var(--ink)}
+.adj button{width:28px;height:28px;border-radius:50%;border:1px solid var(--hair);line-height:1}
+.adj b{font-family:var(--num);font-weight:600;min-width:20px;text-align:center}
+
+.scrim{position:fixed;inset:0;background:rgba(8,12,11,.42);z-index:9}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:10;max-width:480px;margin:0 auto;background:var(--paper);border-radius:22px 22px 0 0;padding:10px 20px calc(22px + env(safe-area-inset-bottom,0px));max-height:88%;overflow-y:auto}
+.grab{width:36px;height:4px;border-radius:2px;background:var(--hair);margin:0 auto 16px}
+.sheet h3{font-family:var(--serif);font-size:20px;margin:0}
+.sheet dl{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:16px 0;font-size:14.5px}
+.sheet dt{color:var(--muted)}.sheet dd{margin:0}
+.sheet .row{display:flex;gap:10px;margin-top:6px}
+.sheet .row .cta{flex:1}
+.sheet .warn{font-size:13px;color:var(--warn);margin:0 0 10px}
+.sub{font-size:13px;color:var(--muted);margin:4px 0 16px}
+.plans{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.plan{display:grid;gap:2px;text-align:left;border:1px solid var(--hair);border-radius:14px;padding:14px;background:var(--paper)}
+.plan[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.pl-n{font-family:var(--serif);font-weight:700;font-size:16px}
+.pl-p{font-family:var(--num);font-size:20px}
+.pl-s{font-size:12px;color:var(--muted)}.pl-s.save{color:var(--maple);font-weight:500}
+.acct{margin-top:14px;border:1px dashed var(--hair);border-radius:14px;padding:6px 14px}
+.acct-r{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;font-size:14px;border-bottom:1px solid var(--hair)}
+.acct-r:last-child{border-bottom:0}
+.acct-r>span:first-child{color:var(--muted);font-size:13px;flex-shrink:0}
+.acct-r b{font-family:var(--num);font-weight:600}
+.acct-no{display:inline-flex;align-items:center;gap:8px;user-select:all;text-align:right}
+.acct-no button{font-size:12px;border:1px solid var(--hair);border-radius:999px;padding:2px 10px;user-select:none}
+.fine{font-size:11.5px;color:var(--muted);margin:10px 0 0;text-align:center}
+.mlist{display:grid;margin:12px 0 4px}
+.mitem{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--hair);font-size:14px}
+.mitem button{font-size:13px;color:var(--warn);padding:6px 4px;white-space:nowrap}
+.mitem em{font-style:normal;font-size:12px;color:var(--muted);white-space:nowrap}
+.mempty{color:var(--muted);font-size:13.5px;padding:10px 0}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .25s cubic-bezier(.2,.8,.2,1)}@keyframes up{from{transform:translateY(40px);opacity:.5}}}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:12px;font-size:13.5px;z-index:40;max-width:calc(100% - 32px);text-align:center}
+</style>
+</head>
+<body>
+<div class="loadbar" id="loadbar" hidden></div>
+
+<div class="wrap" id="splash"><div class="splash"><div><h1>Youni</h1><span id="splashMsg">載入中…</span></div></div></div>
+
+<div class="wrap" id="app" hidden>
+  <div class="modebar" id="modebar" hidden>
+    <div class="seg" role="group" aria-label="切換畫面">
+      <button id="mC" aria-pressed="true">預約</button>
+      <button id="mA" aria-pressed="false">店家設定</button>
+    </div>
+  </div>
+
+  <div class="top">
+    <div>
+      <div class="eyebrow" id="eyebrow">Reformer Pilates</div>
+      <h1>Youni</h1>
+    </div>
+    <button class="mine-btn" id="mineBtn">我的預約 <b id="mineN">0</b></button>
+  </div>
+
+  <div class="ticket" id="ticket">
+    <div class="tk-l"><span class="tk-lbl">團課券</span><span class="tk-n"><b id="tkN">0</b> 堂</span><span class="tk-p" id="tkP" hidden></span></div>
+    <button class="tk-buy" id="buyBtn">購買團課券</button>
+  </div>
+
+  <div id="calArea">
+    <div class="month">
+      <div class="mname"><span class="n" id="mN"></span><span class="u">月</span><span class="y" id="mY"></span></div>
+      <div class="arrows">
+        <button id="prev" aria-label="上個月"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg></button>
+        <button id="next" aria-label="下個月"><svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5"/></svg></button>
+      </div>
+    </div>
+    <div class="mopen" id="mopen" hidden></div>
+    <div class="cal" id="cal">
+      <div class="wd"><span>日</span><span>一</span><span class="on">二</span><span>三</span><span class="on">四</span><span>五</span><span class="on">六</span></div>
+      <div class="grid" id="grid"></div>
+      <div class="key" id="key"></div>
+    </div>
+    <div class="summary" id="summary" hidden></div>
+    <div class="day-h"><h2 id="dayT"></h2><small id="dayS"></small></div>
+  </div>
+  <div id="panel"></div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" hidden></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+/* ====== 部署時只需要改這兩行 ====== */
+const LIFF_ID = '在這裡貼上 LIFF ID';
+const API_URL = '在這裡貼上 Apps Script 網頁應用程式網址';
+/* ================================== */
+
+const WD = '日一二三四五六';
+const S = { me:null, mode:'c', mi:0, sched:{}, adm:null, sel:null, pick:'pack8', busy:false, pendingClose:null };
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => 'NT$' + Number(n).toLocaleString();
+const pDate = d => { const [y,m,dd] = d.split('-').map(Number); return new Date(y, m-1, dd) };
+const md = d => { const x = pDate(d); return `${x.getMonth()+1}/${x.getDate()}（${WD[x.getDay()]}）` };
+const todayKey = () => new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Taipei'}).format(new Date());
+
+/* ---------- API ---------- */
+async function api(action, data = {}){
+  const res = await fetch(API_URL, {
+    method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({ action, idToken: liff.getIDToken(), ...data })
+  });
+  const j = await res.json();
+  if(!j.ok){
+    if(j.error==='TOKEN_EXPIRED' || j.error==='NO_TOKEN'){ liff.logout(); liff.login({ redirectUri: location.href }); }
+    const e = new Error(j.message || '發生錯誤，請再試一次'); e.code = j.error; throw e;
+  }
+  return j.data;
+}
+async function run(fn){
+  if(S.busy) return; S.busy = true; $('#loadbar').hidden = false;
+  try { await fn() } catch(e){ toast(e.message || '連線失敗，請再試一次'); console.error(e) }
+  finally { S.busy = false; $('#loadbar').hidden = true }
+}
+// 在聊天室用學生自己的帳號留下一句紀錄，官方帳號會用「回覆」送出確認（不佔推播額度）
+function say(text){ try{ if(liff.isInClient()) liff.sendMessages([{type:'text', text}]).catch(()=>{}) }catch(_){} }
+
+/* ---------- 月份與資料 ---------- */
+const monthList = () => S.mode==='c' ? (S.me.openMonths||[]) : (S.me.adminMonths||[]);
+const curYm = () => monthList()[S.mi];
+const curData = () => S.mode==='c' ? S.sched[curYm()] : S.adm;
+async function loadMonth(){
+  const ym = curYm(); if(!ym) return;
+  if(S.mode==='c') S.sched[ym] = await api('schedule', {month:ym});
+  else S.adm = await api('adminOverview', {month:ym});
+  pickDay(true);
+}
+function pickDay(force){
+  const d = curData(); if(!d) return;
+  const dates = [...new Set(d.sessions.map(s=>s.date))];
+  if(!force && dates.includes(S.sel)) return;
+  const up = d.sessions.find(s=>!s.past);
+  S.sel = up ? up.date : dates[0] || null;
+}
+function applyStudent(r){ S.me = r.me; if(r.schedule) S.sched[r.schedule.month] = r.schedule; render() }
+function applyAdmin(r){ S.adm = r; render() }
+
+/* ---------- 畫面 ---------- */
+function dotState(s){
+  if(s.closed) return 'x';
+  if(s.mine) return 'me';
+  if(s.past) return 'past';
+  return s.count < s.cap ? 'open' : 'full';
+}
+function renderCal(anim){
+  const ym = curYm(), d = curData(), [y,m] = ym.split('-').map(Number);
+  $('#mN').textContent = m; $('#mY').textContent = y;
+  $('#prev').disabled = S.mi<=0; $('#next').disabled = S.mi>=monthList().length-1;
+  const notes = d.dayNotes || {};
+  const byDate = {}; d.sessions.forEach(s => (byDate[s.date] = byDate[s.date] || []).push(s));
+  const first = new Date(y, m-1, 1).getDay(), days = new Date(y, m, 0).getDate(), tk = todayKey();
+  let h = '<span></span>'.repeat(first);
+  for(let i=1;i<=days;i++){
+    const k = `${y}-${String(m).padStart(2,'0')}-${String(i).padStart(2,'0')}`, ss = byDate[k], today = k===tk ? ' today' : '';
+    if(!ss){ h += `<span class="off${today}"><span class="num">${i}</span></span>`; continue }
+    const past = ss.every(s=>s.past), shut = k in notes;
+    h += `<button class="cd${past?' past':''}${shut?' shut':''}${today}" data-day="${k}" aria-pressed="${k===S.sel}" aria-label="${m}月${i}日">
+      <span class="num">${i}</span><span class="dots">${ss.map(s=>`<i class="dot ${dotState(s)}"></i>`).join('')}</span></button>`;
+  }
+  const g = $('#grid'); g.innerHTML = h;
+  if(anim){ g.classList.remove('anim'); void g.offsetWidth; g.classList.add('anim') }
+  $('#key').innerHTML = S.mode==='c'
+    ? '<span><i class="dot open"></i>可預約</span><span><i class="dot full"></i>已額滿</span><span><i class="dot me"></i>你的預約</span><span><i class="dot x"></i>不開放</span>'
+    : '<span><i class="dot open"></i>還有名額</span><span><i class="dot full"></i>已額滿</span><span><i class="dot x"></i>不開放</span>';
+  $('#cal').classList.toggle('mclosed', S.mode==='a' && !S.adm.monthOpen);
+}
+
+function spots(s){
+  const others = s.count - (s.mine?1:0);
+  const segs = Array.from({length:s.cap}, (_,i) => i<others ? 'taken' : (s.mine && i===others) ? 'me' : '');
+  return `<div class="spots"><div class="spots-h"><span>團課名額${s.mine?'・含你 1 位':''}</span><span><b>${s.count}</b> / ${s.cap} 人</span></div>
+    <div class="segs" aria-label="${s.count} / ${s.cap} 人已預約">${segs.map(c=>`<i class="seg-i ${c}"></i>`).join('')}</div></div>`;
+}
+
+function renderStudentDay(){
+  const d = curData(), date = S.sel, ss = d.sessions.filter(s=>s.date===date);
+  $('#dayT').textContent = date ? md(date) : ''; $('#dayS').textContent = '器械團課・55 分鐘';
+  if(date && date in (d.dayNotes||{})){
+    $('#panel').innerHTML = `<div class="rest"><b>這天不開放預約</b>${esc(d.dayNotes[date] || '老師休息')}</div>`; return;
+  }
+  $('#panel').innerHTML = '<div class="sessions">' + ss.map(s => {
+    const L = s.cap - s.count;
+    const status = s.closed ? '<b>—</b>本時段不開放' : s.past ? '<b>—</b>已結束' : L>0 ? `<b>剩 ${L} 位</b>每班 ${s.cap} 人` : '<b>額滿</b>可加入候補';
+    let btn;
+    if(s.past) btn = '<button class="cta" disabled>已結束</button>';
+    else if(s.closed) btn = '<button class="cta" disabled>本時段不開放</button>';
+    else if(s.mine) btn = `<button class="cta mine" data-cancel="${s.id}">已預約・查看或取消</button>`;
+    else if(s.waiting) btn = `<button class="cta mine" data-unwait="${s.id}">候補中・點此退出</button>`;
+    else if(L<=0) btn = `<button class="cta line" data-wait="${s.id}">加入候補</button>`;
+    else btn = `<button class="cta go" data-book="${s.id}">預約這堂</button>`;
+    return `<article class="sess${s.past||s.closed?' dim':''}">
+      <div class="sess-top"><div class="t">${s.time}<small>– ${s.end}・55 分鐘</small></div><div class="status${L===1&&!s.closed&&!s.past?' low':''}">${status}</div></div>
+      ${s.closed?'':spots(s)}${btn}</article>`;
+  }).join('') + '</div>';
+}
+
+function renderAdminDay(){
+  const d = S.adm, date = S.sel, ss = d.sessions.filter(s=>s.date===date), shut = date in (d.dayNotes||{});
+  $('#dayT').textContent = date ? md(date) : ''; $('#dayS').textContent = shut ? '整天不開放' : '點開關調整';
+  let h = `<div class="adm"><div class="adm-row"><div class="lbl"><strong>整天不開放預約</strong>
+      ${shut?'<div class="note-warn">客人會看到「這天不開放預約」</div>':''}</div>
+      <button class="sw" role="switch" aria-checked="${shut}" aria-label="整天不開放" data-shutday="${date}"></button></div>`;
+  if(shut) h += `<div class="field"><label for="note">給客人看的說明</label><div class="inrow">
+      <input id="note" maxlength="60" value="${esc(d.dayNotes[date])}" placeholder="例如：老師進修，暫停一次"><button class="small-btn" data-savenote="${date}">儲存</button></div></div>`;
+  ss.forEach(s => {
+    const open = !s.closed;
+    h += `<div class="adm-row"><div class="lbl"><b>${s.time}</b> <span style="color:var(--muted);font-size:13px">– ${s.end}・${s.count}/${s.cap} 人</span>
+      <div class="roster">${s.roster.length ? s.roster.map(n=>`<span class="chip">${esc(n)}</span>`).join('') : '<span class="chip empty">還沒有人預約</span>'}
+      ${s.waitlist.map(n=>`<span class="chip w">候補 ${esc(n)}</span>`).join('')}</div></div>
+      <button class="sw" role="switch" aria-checked="${open}" aria-label="${s.time} 開放預約" data-sess="${s.id}" ${shut||s.past?'disabled':''}></button></div>`;
+  });
+  $('#panel').innerHTML = h + '</div>';
+}
+
+function renderAdminExtras(){
+  const d = S.adm, ym = curYm(), [y,m] = ym.split('-').map(Number);
+  const open = d.monthOpen;
+  $('#mopen').innerHTML = `<div><strong>${m} 月開放客人預約</strong>
+      <small>${open ? '客人可以看到並預約這個月的課' : '客人看不到這個月，已預約的會保留'}</small>
+      <small>客人目前可預約：${d.openMonths.length ? d.openMonths.map(x=>Number(x.slice(5))+' 月').join('、') : '無'}</small></div>
+    <button class="sw" role="switch" aria-checked="${open}" aria-label="${m} 月開放客人預約" data-month="${ym}"></button>`;
+  const live = d.sessions.filter(s=>!s.closed);
+  $('#summary').innerHTML = `<span><b>${live.length}</b>堂開課</span><span><b>${d.sessions.length-live.length}</b>堂不開放</span><span><b>${live.reduce((a,s)=>a+s.count,0)}</b>人次已預約</span>`;
+  const closed = [];
+  Object.keys(d.dayNotes).sort().forEach(k => closed.push([md(k)+' 整天', d.dayNotes[k]]));
+  d.sessions.filter(s=>s.closed && !(s.date in d.dayNotes)).forEach(s => closed.push([md(s.date)+' '+s.time, '單一時段']));
+  $('#foot').innerHTML = `
+    <div class="block"><h3>待確認的轉帳</h3>${d.payments.length ? '<ul>'+d.payments.map(p=>`<li><span>${esc(p.name)}<small>${esc(p.label)}・${money(p.amount)}・末 5 碼 ${esc(p.last5)}</small></span>
+      <span class="acts"><button class="no-btn" data-reject="${p.paymentId}">查無</button><button class="ok-btn" data-ok="${p.paymentId}">確認收款，發券</button></span></li>`).join('')+'</ul>' : '<span>沒有待確認的轉帳</span>'}</div>
+    <div class="block"><h3>${m} 月不開放的日子</h3>${closed.length ? '<ul>'+closed.map(([a,b])=>`<li><span>${a}</span><span>${esc(b)}</span></li>`).join('')+'</ul>' : '<span>這個月全部照常開課</span>'}</div>
+    <div class="block"><h3>學生團課券</h3>${d.students.length ? '<ul>'+d.students.map(s=>`<li><span>${esc(s.name)}</span><span class="adj">
+      <button data-adj="${esc(s.userId)}" data-delta="-1" aria-label="${esc(s.name)} 減 1 堂">−</button><b>${s.tickets}</b>堂<button data-adj="${esc(s.userId)}" data-delta="1" aria-label="${esc(s.name)} 加 1 堂">+</button></span></li>`).join('')+'</ul>' : '<span>還沒有學生</span>'}
+      <p class="fine" style="text-align:left">學生第一次打開預約頁後就會出現在這裡。現場收現金或補償時，可以手動加減堂數。</p></div>`;
+}
+
+function render(anim){
+  const c = S.mode==='c', me = S.me;
+  $('#modebar').hidden = !me.isAdmin;
+  $('#mC').setAttribute('aria-pressed', c); $('#mA').setAttribute('aria-pressed', !c);
+  $('#eyebrow').textContent = c ? 'Reformer Pilates' : 'Studio Settings';
+  $('#mineBtn').hidden = !c; $('#mineN').textContent = me.bookings.length;
+  $('#ticket').hidden = !c; $('#tkN').textContent = me.tickets;
+  $('#tkP').hidden = !me.pendingTickets; $('#tkP').textContent = `+${me.pendingTickets} 待確認`;
+  $('#mopen').hidden = c; $('#summary').hidden = c;
+  const noMonth = !curYm() || !curData();
+  $('#calArea').hidden = noMonth;
+  if(noMonth){
+    $('#panel').innerHTML = '<div class="rest"><b>目前還沒有開放預約</b>新的月份開放時，老師會在 LINE 通知你</div>';
+    $('#foot').innerHTML = ''; return;
+  }
+  renderCal(anim);
+  if(c){
+    renderStudentDay();
+    $('#foot').innerHTML = `<span>每班最多 ${me.capacity} 人・${me.classMinutes} 分鐘・每次預約使用 1 堂團課券</span>
+      <span>開課前 ${me.cutoffHours} 小時以前可自行取消，團課券會退回；之後取消或未出席不退</span>
+      <span>一對一、一對二器械課請直接私訊老師預約</span>`;
+  } else { renderAdminDay(); renderAdminExtras() }
+}
+
+/* ---------- 底部視窗 ---------- */
+function openSheet(h){ $('#sheet').innerHTML = '<div class="grab"></div>'+h; $('#sheet').hidden = false; $('#scrim').hidden = false; $('#sheet').querySelector('button,input')?.focus() }
+function closeSheet(){ $('#sheet').hidden = true; $('#scrim').hidden = true }
+let tt; function toast(m){ const t=$('#toast'); t.textContent=m; t.hidden=false; clearTimeout(tt); tt=setTimeout(()=>t.hidden=true, 2800) }
+const findS = id => curData()?.sessions.find(s=>s.id===id);
+const label = id => { const [d,t] = id.split('@'); return `${md(d)} ${t}` };
+
+function askBook(s){
+  const t = S.me.tickets;
+  if(t < 1) return openSheet(`<h3>團課券不足</h3><p class="sub">預約 ${label(s.id)} 需要 1 堂團課券，你目前剩 0 堂。</p>
+    <div class="row"><button class="cta line" data-close>先不要</button><button class="cta go" data-buy>購買團課券</button></div>`);
+  openSheet(`<h3>確認預約</h3>
+    <dl><dt>課程</dt><dd>器械皮拉提斯團課</dd><dt>日期</dt><dd>${md(s.date)}</dd><dt>時間</dt><dd>${s.time} – ${s.end}</dd>
+    <dt>團課券</dt><dd>使用 1 堂（剩 ${t} → ${t-1}）</dd></dl>
+    <p class="sub">開課前 ${S.me.cutoffHours} 小時以前可自行取消並退券；之後取消或未出席，這堂不退。</p>
+    <div class="row"><button class="cta line" data-close>再想想</button><button class="cta go" data-confirm="${s.id}">確認預約</button></div>`);
+}
+function askCancel(id, canCancel){
+  openSheet(`<h3>${label(id)}</h3>
+    <dl><dt>課程</dt><dd>器械皮拉提斯團課</dd><dt>取消後</dt><dd>${canCancel?'退回 1 堂團課券':'—'}</dd></dl>
+    ${canCancel?'':`<p class="warn">開課前 ${S.me.cutoffHours} 小時內無法自行取消，請直接私訊老師。</p>`}
+    <div class="row"><button class="cta line" data-close>保留</button>${canCancel?`<button class="cta mine" data-docancel="${id}">取消預約</button>`:''}</div>`);
+}
+function showMine(){
+  const me = S.me;
+  openSheet(`<h3>我的預約</h3><div class="mlist">${me.bookings.length ? me.bookings.map(b=>`<div class="mitem"><span>${esc(b.label)}</span>
+      ${b.canCancel?`<button data-cancel2="${b.id}">取消</button>`:'<em>不可自行取消</em>'}</div>`).join('') : '<p class="mempty">目前沒有預約</p>'}</div>
+    ${me.waits.length?`<h3 style="font-size:15px;margin-top:16px">候補中</h3><div class="mlist">${me.waits.map(w=>`<div class="mitem"><span>${esc(w.label)}</span><button data-unwait="${w.id}">退出</button></div>`).join('')}</div>`:''}
+    <div class="row" style="margin-top:14px"><button class="cta line" data-close>關閉</button></div>`);
+}
+function showBuy(){
+  const plans = S.me.plans, cur = plans[S.pick], bank = S.me.bank;
+  const last5 = $('#last5')?.value || '';
+  openSheet(`<h3>購買團課券</h3><p class="sub">轉帳後通知老師，確認收款就會加入團課券，沒有使用期限</p>
+    <div class="plans">${Object.entries(plans).map(([k,v])=>`<button class="plan" aria-pressed="${S.pick===k}" data-plan="${k}">
+      <span class="pl-n">${esc(v.label)}</span><span class="pl-p">${money(v.price)}</span>
+      <span class="pl-s${v.count>1?' save':''}">${v.count>1?`每堂 ${Math.round(v.price/v.count)}・省 ${money(plans.single.price*v.count - v.price)}`:`每堂 ${v.price.toLocaleString()}`}</span></button>`).join('')}</div>
+    <div class="acct">
+      <div class="acct-r"><span>轉帳金額</span><b>${money(cur.price)}</b></div>
+      <div class="acct-r"><span>銀行</span><span>${esc(bank.name)}</span></div>
+      <div class="acct-r"><span>帳號</span><span class="acct-no"><b id="acctNo">${esc(bank.account)}</b><button data-copy>複製</button></span></div>
+      <div class="acct-r"><span>戶名</span><span>${esc(bank.holder)}</span></div>
+    </div>
+    <div class="field" style="padding:14px 0 6px"><label for="last5">轉帳後，填寫你的帳號末 5 碼</label>
+      <input id="last5" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="例如 52031" value="${esc(last5)}"></div>
+    <button class="cta go" data-notify>我已轉帳，通知老師</button>
+    <p class="fine">老師確認收款後，會用 LINE 通知你團課券已加入。</p>`);
+}
+function selectAcct(){ const el=$('#acctNo'); if(!el) return; const r=document.createRange(); r.selectNodeContents(el); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast('已選取帳號，可以直接複製') }
+
+/* ---------- 操作 ---------- */
+document.addEventListener('click', e => {
+  if(e.target.id==='scrim') return closeSheet();
+  const b = e.target.closest('button'); if(!b || b.disabled) return;
+  const ds = b.dataset, ym = curYm();
+
+  if(b.id==='mC' || b.id==='mA'){
+    const mode = b.id==='mC' ? 'c' : 'a'; if(mode===S.mode) return;
+    S.mode = mode; S.mi = 0; S.sel = null;
+    return run(async()=>{ if(mode==='c'){ S.me = await api('me'); S.sched = {} } await loadMonth(); render(true) });
+  }
+  if(b.id==='prev' || b.id==='next'){
+    S.mi += b.id==='next' ? 1 : -1;
+    return run(async()=>{ await loadMonth(); render(true) });
+  }
+  if(b.id==='mineBtn') return showMine();
+  if(b.id==='buyBtn' || 'buy' in ds) return showBuy();
+  if(ds.day){ S.sel = ds.day; return render() }
+  if('close' in ds) return closeSheet();
+  if(ds.plan){ S.pick = ds.plan; return showBuy() }
+  if('copy' in ds){ const t=(S.me.bank.account||'').replace(/[^0-9]/g,''); try{ navigator.clipboard.writeText(t).then(()=>toast('帳號已複製'), selectAcct) }catch(_){ selectAcct() } return }
+
+  // 學生
+  if(ds.book) return askBook(findS(ds.book));
+  if(ds.cancel){ const s=findS(ds.cancel); return askCancel(s.id, s.canCancel) }
+  if(ds.cancel2){ const bk=S.me.bookings.find(x=>x.id===ds.cancel2); return askCancel(bk.id, bk.canCancel) }
+  if(ds.confirm) return run(async()=>{ const r=await api('book',{sessionId:ds.confirm, month:ym}); closeSheet(); applyStudent(r); toast('預約成功'); say('預約 '+label(ds.confirm)) });
+  if(ds.docancel) return run(async()=>{ const r=await api('cancel',{sessionId:ds.docancel, month:ym}); closeSheet(); applyStudent(r); toast('已取消，團課券已退回'); say('取消 '+label(ds.docancel)) });
+  if(ds.wait) return run(async()=>{ const r=await api('waitJoin',{sessionId:ds.wait, month:ym}); applyStudent(r); toast('已加入候補，有空位會自動幫你預約'); say('候補 '+label(ds.wait)) });
+  if(ds.unwait) return run(async()=>{ const r=await api('waitLeave',{sessionId:ds.unwait, month:ym}); closeSheet(); applyStudent(r); toast('已退出候補') });
+  if('notify' in ds){
+    const v = ($('#last5').value||'').trim();
+    if(!/^\d{5}$/.test(v)){ $('#last5').focus(); return toast('請填寫帳號末 5 碼，老師才能對帳') }
+    return run(async()=>{
+      const r = await api('buyNotify',{plan:S.pick, last5:v, month:ym}); applyStudent(r);
+      const p = S.me.plans[S.pick];
+      openSheet(`<h3>已通知老師</h3><p class="sub">${esc(p.label)}・${money(p.price)}・末 5 碼 ${v}</p>
+        <p class="sub">老師對帳後會加入 ${p.count} 堂團課券，並用 LINE 通知你。</p>
+        <div class="row"><button class="cta go" data-close>好</button></div>`);
+      say(`已轉帳 ${p.label} ${money(p.price)}（末 5 碼 ${v}）`);
+    });
+  }
+
+  // 店家
+  if(ds.month!==undefined && ds.month!==''){
+    const open = b.getAttribute('aria-checked')!=='true';
+    return run(async()=>{ applyAdmin(await api('setMonthOpen',{month:ds.month, open})); toast(open?'已開放這個月的預約':'已停止這個月的新預約') });
+  }
+  if(ds.shutday){
+    const date = ds.shutday, closing = b.getAttribute('aria-checked')!=='true';
+    const n = S.adm.sessions.filter(s=>s.date===date && !s.past).reduce((a,s)=>a+s.count,0);
+    if(closing && n) return openSheet(`<h3>關閉 ${md(date)}？</h3><p class="sub">這天已有 ${n} 人預約。關閉後會自動取消他們的預約、退回團課券，並用 LINE 通知。</p>
+      <div class="row"><button class="cta line" data-close>先不要</button><button class="cta go" data-doshut="${date}">確定關閉</button></div>`);
+    return run(async()=>{ applyAdmin(await api('setDayClosed',{date, closed:closing, note:''})); toast(closing?'這天已設為不開放':'這天已恢復開課') });
+  }
+  if(ds.doshut) return run(async()=>{ applyAdmin(await api('setDayClosed',{date:ds.doshut, closed:true, note:''})); closeSheet(); toast('已關閉，並通知預約的學生') });
+  if(ds.savenote) return run(async()=>{ applyAdmin(await api('setDayClosed',{date:ds.savenote, closed:true, note:$('#note').value})); toast('說明已儲存') });
+  if(ds.sess){
+    const s = findS(ds.sess), closing = b.getAttribute('aria-checked')==='true';
+    if(closing && s.count) return openSheet(`<h3>關閉 ${label(s.id)}？</h3><p class="sub">這堂已有 ${s.count} 人預約。關閉後會自動取消他們的預約、退回團課券，並用 LINE 通知。</p>
+      <div class="row"><button class="cta line" data-close>先不要</button><button class="cta go" data-dosess="${s.id}">確定關閉</button></div>`);
+    return run(async()=>{ applyAdmin(await api('setSessionClosed',{sessionId:s.id, closed:closing})); toast(closing?'這個時段已關閉':'這個時段已開放') });
+  }
+  if(ds.dosess) return run(async()=>{ applyAdmin(await api('setSessionClosed',{sessionId:ds.dosess, closed:true})); closeSheet(); toast('已關閉，並通知預約的學生') });
+  if(ds.ok) return run(async()=>{ applyAdmin(await api('confirmPayment',{paymentId:ds.ok, month:ym})); toast('已發券，並用 LINE 通知學生') });
+  if(ds.reject){
+    const p = S.adm.payments.find(x=>x.paymentId===ds.reject);
+    return openSheet(`<h3>查無這筆轉帳？</h3><p class="sub">${esc(p.name)}・${esc(p.label)}・${money(p.amount)}・末 5 碼 ${esc(p.last5)}<br>系統會用 LINE 請學生私訊你確認。</p>
+      <div class="row"><button class="cta line" data-close>返回</button><button class="cta go" data-doreject="${p.paymentId}">確定</button></div>`);
+  }
+  if(ds.doreject) return run(async()=>{ applyAdmin(await api('rejectPayment',{paymentId:ds.doreject, month:ym})); closeSheet(); toast('已通知學生') });
+  if(ds.adj) return run(async()=>{ applyAdmin(await api('adjustTickets',{userId:ds.adj, delta:Number(ds.delta), month:ym})) });
+});
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeSheet() });
+
+/* ---------- 啟動 ---------- */
+(async function boot(){
+  const msg = t => $('#splashMsg').textContent = t;
+  if(LIFF_ID.includes('貼上') || API_URL.includes('貼上')) return msg('尚未設定 LIFF_ID 與 API_URL，請依照教學填入。');
+  try{
+    await liff.init({ liffId: LIFF_ID });
+    if(!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return }
+    S.me = await api('me');
+    await loadMonth();
+    $('#splash').hidden = true; $('#app').hidden = false;
+    render(true);
+  }catch(e){ console.error(e); msg(e.message || '載入失敗，請關閉後重新開啟') }
+})();
+</script>
+</body>
+</html>
